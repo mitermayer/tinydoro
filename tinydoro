@@ -1,0 +1,86 @@
+#!/bin/bash
+
+MINUTES=25;
+MINUTES_FOR_NEW_TASK=5;
+MUSIC_DURATION=3;
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+SOUND_FILE="$DIR/assets/alert.wav";
+LICENSE_FILE="$DIR/assets/intro.txt";
+
+MESSAGE_GREETING="Starting...";
+MESSAGE_TIMER="Time left";
+MESSAGE_NEW_TASK="Next task";
+MESSAGE_FINISHED="Pomodoro tasks completed";
+
+TOTAL_SECONDS=MINUTES*60;
+TOTAL_SECONDS_BEFORE_TASK=MINUTES_FOR_NEW_TASK*60;
+TOTAL_POMODORO_TASKS_DONE=0;
+
+print_timed_message() {
+
+    i=$1;
+    display_message="${2:-$MESSAGE_TIMER}"
+
+    ((sec=i%60, i/=60, min=i%60, hrs=i/60))
+
+    timestamp=$(printf "%d:%02d:%02d" $hrs $min $sec);
+
+    printf '\r%s: %s' "$display_message" "$timestamp"
+}
+
+play_bell() {
+    aplay -d $MUSIC_DURATION $SOUND_FILE &> /dev/null
+}
+
+start_new_task() {
+    SECONDS=0;
+
+    TOTAL_TIME=${1:-TOTAL_SECONDS}
+    while sleep .5 && ((SECONDS <= TOTAL_TIME)); do
+        print_timed_message $((TOTAL_TIME-SECONDS)) "${2}"
+    done
+}
+
+task_finished() {
+    let TOTAL_POMODORO_TASKS_DONE=$TOTAL_POMODORO_TASKS_DONE+1;
+    echo -e "\rPomodoro Task $TOTAL_POMODORO_TASKS_DONE completed.\r"
+    echo -e "\r---------------------------------\r"
+}
+
+next_task() {
+    play_bell
+    start_new_task
+    task_finished
+    play_bell
+}
+
+start_tasks() {
+    cat $LICENSE_FILE
+    echo "$MESSAGE_GREETING"
+    echo -e "\r---------------------------------\r"
+
+    if [ $1 ]; then
+        # If we have an argument we just do the number of pomodoro tasks we were meant to
+        for ((b = 1; b <= $1; b++)); do
+
+            next_task
+
+            if [[ $b < $1 ]]; then
+                start_new_task $TOTAL_SECONDS_BEFORE_TASK "${MESSAGE_NEW_TASK}"
+            fi
+        done
+    else
+        # Keep doing tasks until the program exits
+        while true
+        do
+            next_task
+            start_new_task $TOTAL_SECONDS_BEFORE_TASK "${MESSAGE_NEW_TASK}"
+        done
+    fi
+
+    echo -e "\r$MESSAGE_FINISHED: $TOTAL_POMODORO_TASKS_DONE"
+
+    printf '\n'
+}
+
+start_tasks $1
