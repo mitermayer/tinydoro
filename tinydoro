@@ -1,9 +1,18 @@
 #!/bin/bash
 
+# Adding symlink compatibilities
+# http://stackoverflow.com/questions/59895/getting-the-source-directory-of-a-bash-script-from-within/246128#246128
+SOURCE="${BASH_SOURCE[0]}"
+while [ -h "$SOURCE" ]; do
+  DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+  SOURCE="$(readlink "$SOURCE")"
+  [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE"
+done
+
 MINUTES=25;
 MINUTES_FOR_NEW_TASK=5;
 MUSIC_DURATION=3;
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
 SOUND_FILE="$DIR/assets/alert.wav";
 LICENSE_FILE="$DIR/assets/intro.txt";
 
